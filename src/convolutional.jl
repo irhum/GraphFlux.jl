@@ -5,6 +5,9 @@ n = 5000
 nz = 30
 dim = (n, n)
 
+function ConvGNN(xᵢ, xⱼ, C, ⊕, ϕ, ψ)
+    ϕ(xᵢ, C * )
+end 
 x = rand(1:n, nz)
 y = rand(1:n, nz)
 v = rand(Float32, nz)
@@ -18,4 +21,5 @@ B = CUDA.rand(5000, 20)
 
 ARR2 = ARR |> CuSparseMatrixCSR
 ARR2 * B
+
 
