@@ -22,30 +22,28 @@ end
 
 Base.:size(A::CuSparseMatrixHCOO) = A.dims
 
-function muldensesparsecoo(X::CuMatrix, I::CuVector, J::CuVector, V::CuVector)
+function Base.:*(X::CuMatrix, A::CuSparseMatrixHCOO, ⊕)
     function kernel!(O, X, I, J, V)
         thread = threadIdx().x + (blockIdx().x - 1) * blockDim().x - 1
         i = thread % size(O, 1) + 1
         j = thread ÷ size(O, 1) + 1
     
         @inbounds if i <= size(O, 1) && j <= length(J)
-            @atomic O[i, J[j]] += X[i, I[j]] * V[j]
+            @atomic O[i, J[j]] = ⊕(O[i, J[j]], X[i, I[j]] * V[j])
         end
         return
     end
-   
-    O = CUDA.zeros(X |> size)
+    
+    # FIX TYPES
+    O = CUDA.zeros(size(X, 1), size(A, 2))
 
     threads = 256
     blocks = ceil(Int, size(O, 1) * length(V) / threads)
-    @cuda blocks=blocks threads=threads kernel!(O, X, I, J, V)
+    @cuda blocks=blocks threads=threads kernel!(O, X, A.rowInd, A.colInd, A.nzVal)
 
     return O
 end
 
-using CSV, DataFrames, CodecZlib, Mmap
+Base.:*(X::CuMatrix, A::CuSparseMatrixHCOO) = *(X, A, +)
 
-A = CSV.File(transcode(GzipDecompressor, Mmap.mmap("hiv/raw/edge.csv.gz"))) |> DataFrame
 
-A = CSV.File(transcode(GzipDecompressor, Mmap.mmap("hiv/raw/edge-feat.csv.gz"))) |> DataFrame
-A = CSV.File(transcode(GzipDecompressor, Mmap.mmap("hiv/raw/node-feat.csv.gz"))) |> DataFrame
