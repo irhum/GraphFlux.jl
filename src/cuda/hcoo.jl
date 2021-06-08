@@ -13,7 +13,7 @@ mutable struct CuSparseMatrixHCOO{Tv,N} <: AbstractCuSparseMatrix{Tv}
 end
 
 function CuSparseMatrixHCOO(rowInd, colInd, nzVal, dims)
-    CuSparseMatrixHCOO(rowInd,colInd,nzVal,dims,size(nzVal, 1))
+    CuSparseMatrixHCOO(rowInd,colInd,nzVal,dims,length(nzVal))
 end
 
 function CuSparseMatrixHCOO(rowInd, colInd, nzVal)
@@ -21,34 +21,6 @@ function CuSparseMatrixHCOO(rowInd, colInd, nzVal)
 end
 
 Base.:size(A::CuSparseMatrixHCOO) = A.dims
-
-n = 5000
-nz = 30000
-dim = (n, n)
-
-i = rand(1:n, nz)
-j = rand(1:n, nz)
-v = rand(Float32, nz)
-
-I = i |> cu
-J = j |> cu
-V = v |> cu
-
-X = rand(32, n) |> cu
-
-@time ARR1 = CuSparseMatrixHCOO(X, Y, V, dim, nz)
-@time ARR2 = CuSparseMatrixHCOO(X, Y, V, dim)
-@time ARR3 = CuSparseMatrixHCOO(X, Y, V)
-print(":)")
-Int <: Integer
-
-ARR2 = CuSparseMatrixHCOO(X, Y, repeat(V, 1, 3, 2), dim)
-repeat(V, 1, 3)
-[1, 2, 3][UInt(2)]
-
-using CUDA
-using SparseArrays
-using BenchmarkTools
 
 function muldensesparsecoo(X::CuMatrix, I::CuVector, J::CuVector, V::CuVector)
     function kernel!(O, X, I, J, V)
@@ -71,37 +43,9 @@ function muldensesparsecoo(X::CuMatrix, I::CuVector, J::CuVector, V::CuVector)
     return O
 end
 
-n = 5000
-nz = 30000
-dim = (n, n)
+using CSV, DataFrames, CodecZlib, Mmap
 
-i = rand(1:n, nz)
-j = rand(1:n, nz)
-v = rand(Float32, nz)
+A = CSV.File(transcode(GzipDecompressor, Mmap.mmap("hiv/raw/edge.csv.gz"))) |> DataFrame
 
-I = i |> cu
-J = j |> cu
-V = v |> cu
-
-W = rand(64, 64) |> cu
-X = rand(64, n) |> cu
-A = sparse(i, j, v) |> Array |> cu
-
-@benchmark (CUDA.@sync O1 = muldensesparsecoo(X, I, J, V)) seconds=0.5
-@benchmark (CUDA.@sync OW = W * X) seconds=0.5
-@benchmark (CUDA.@sync O2 = X * A) seconds=0.5
-
-
-@benchmark (CUDA.@sync att = X' * X) seconds=0.5
-
-using MatrixDepot
-using CUDA.CUSPARSE
-
-X = ones(Float32, 64, 27770) |> cu
-A = convert(SparseMatrixCSC{Float32, Int64}, matrixdepot("SNAP/cit-HepTh")) |> CuSparseMatrixCSR |> CuSparseMatrixCOO
-print(":)")
-
-@benchmark (CUDA.@sync muldensesparsecoo(X, A.rowInd, A.colInd, A.nzVal)) seconds=0.5
-@time (CUDA.@sync muldensesparsecoo(X, A.rowInd, A.colInd, A.nzVal)) 
-
-muldensesparsecoo(X, A.rowInd, A.colInd, A.nzVal)
+A = CSV.File(transcode(GzipDecompressor, Mmap.mmap("hiv/raw/edge-feat.csv.gz"))) |> DataFrame
+A = CSV.File(transcode(GzipDecompressor, Mmap.mmap("hiv/raw/node-feat.csv.gz"))) |> DataFrame
