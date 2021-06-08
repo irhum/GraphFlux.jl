@@ -48,6 +48,7 @@ repeat(V, 1, 3)
 
 using CUDA
 using SparseArrays
+using BenchmarkTools
 
 function muldensesparsecoo(X::CuMatrix, I::CuVector, J::CuVector, V::CuVector)
     function kernel!(O, X, I, J, V)
@@ -82,18 +83,25 @@ I = i |> cu
 J = j |> cu
 V = v |> cu
 
-X = rand(32, n) |> cu
+W = rand(64, 64) |> cu
+X = rand(64, n) |> cu
 A = sparse(i, j, v) |> Array |> cu
 
-@time (CUDA.@sync O1 = muldensesparsecoo(X, I, J, V))
-@time (CUDA.@sync O2 = X * A)
+@benchmark (CUDA.@sync O1 = muldensesparsecoo(X, I, J, V)) seconds=0.5
+@benchmark (CUDA.@sync OW = W * X) seconds=0.5
+@benchmark (CUDA.@sync O2 = X * A) seconds=0.5
 
-sum((O1 .- O2).^2)
 
-X = rand(Float16, 32, n) |> cu
-A = sparse(i, j, v) |> Array |> cu
+@benchmark (CUDA.@sync att = X' * X) seconds=0.5
 
-@time (CUDA.@sync O1 = muldensesparsecoo(X, I, J, V))
-@time (CUDA.@sync O2 = X * A)
+using MatrixDepot
+using CUDA.CUSPARSE
 
-sum((O1 .- O2).^2)
+X = ones(Float32, 64, 27770) |> cu
+A = convert(SparseMatrixCSC{Float32, Int64}, matrixdepot("SNAP/cit-HepTh")) |> CuSparseMatrixCSR |> CuSparseMatrixCOO
+print(":)")
+
+@benchmark (CUDA.@sync muldensesparsecoo(X, A.rowInd, A.colInd, A.nzVal)) seconds=0.5
+@time (CUDA.@sync muldensesparsecoo(X, A.rowInd, A.colInd, A.nzVal)) 
+
+muldensesparsecoo(X, A.rowInd, A.colInd, A.nzVal)
