@@ -1,9 +1,4 @@
-using CUDA
-using Base 
-
-import CUDA.CUSPARSE: AbstractCuSparseMatrix
-import SparseArrays: dimlub
-
+# Defining the type
 mutable struct CuSparseMatrixHCOO{Tv,N} <: AbstractCuSparseMatrix{Tv}
     rowInd::CuVector{<:Int}
     colInd::CuVector{<:Int}
@@ -22,6 +17,7 @@ end
 
 Base.:size(A::CuSparseMatrixHCOO) = A.dims
 
+# Defining the fused message-aggregate operation
 function Base.:*(X::CuMatrix, A::CuSparseMatrixHCOO, ⊕)
     function kernel!(O, X, I, J, V)
         thread = threadIdx().x + (blockIdx().x - 1) * blockDim().x - 1
@@ -45,5 +41,3 @@ function Base.:*(X::CuMatrix, A::CuSparseMatrixHCOO, ⊕)
 end
 
 Base.:*(X::CuMatrix, A::CuSparseMatrixHCOO) = *(X, A, +)
-
-

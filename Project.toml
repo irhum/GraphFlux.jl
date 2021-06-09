@@ -3,6 +3,9 @@ uuid = "a4947d25-c363-4647-b1dd-905d8b976b9e"
 authors = ["Irhum Shafkat <13271155+irhum@users.noreply.github.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+
 [compat]
 julia = "1.6"
 
