@@ -30,7 +30,7 @@ function Base.:*(X::CuMatrix, A::CuSparseMatrixHCOO, ⊕)
         return
     end
     
-    # FIX TYPES
+    # TODO: FIX TYPES
     O = CUDA.zeros(size(X, 1), size(A, 2))
 
     threads = 256
