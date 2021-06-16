@@ -10,5 +10,7 @@ export
     CuSparseMatrixHCOO
 
 include("cuda/hcoo.jl")
+include("cuda/ops/scatter.jl")
+include("cuda/ops/gather.jl")
 
 end

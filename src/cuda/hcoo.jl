@@ -34,7 +34,7 @@ function Base.:*(X::CuMatrix, A::CuSparseMatrixHCOO, ⊕)
     O = CUDA.zeros(size(X, 1), size(A, 2))
 
     threads = 256
-    blocks = ceil(Int, size(O, 1) * length(V) / threads)
+    blocks = ceil(Int, size(O, 1) * length(A.nzVal) / threads)
     @cuda blocks=blocks threads=threads kernel!(O, X, A.rowInd, A.colInd, A.nzVal)
 
     return O
