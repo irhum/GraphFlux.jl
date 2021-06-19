@@ -41,3 +41,7 @@ function Base.:*(X::CuMatrix, A::CuSparseMatrixHCOO, ⊕)
 end
 
 Base.:*(X::CuMatrix, A::CuSparseMatrixHCOO) = *(X, A, +)
+
+function Base.show(io::IO, A::CuSparseMatrixHCOO)
+    print(io, "CuSparseMatrixHCOO of size $size(A) with $(A.nnz) non-zero elements")
+end

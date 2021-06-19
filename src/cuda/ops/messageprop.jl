@@ -1,4 +1,4 @@
-function scatter(data, targets, bins, ⊕)
+function scatter(data::CuMatrix, targets::CuVector, bins, ⊕)
     function kernel!(output, data, targets)
         thread = threadIdx().x + (blockIdx().x - 1) * blockDim().x - 1
         i = thread % size(output, 1) + 1
