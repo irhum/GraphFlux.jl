@@ -12,11 +12,14 @@ export
 
     GCN
 
-include("cuda/hcoo.jl")
+include("cuda/dtypes/hcoo.jl")
 
-# ops
-include("cuda/ops/scatter.jl")
-include("cuda/ops/gather.jl")
+
+include("ops/messageprop.jl")
+include("ops/symmetrize.jl")
+
+# GPU ops
+include("cuda/ops/messageprop.jl")
 
 # layers 
 include("layers/gcn.jl")

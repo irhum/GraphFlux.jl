@@ -1,23 +1,15 @@
-# function indegrees(targets::CuVector, bins)
-#     function kernel!(output, targets)
-#         tid = threadIdx().x + (blockIdx().x - 1) * blockDim().x 
-    
-#         @inbounds if tid <= length(targets)
-#             @atomic output[targets[tid]] += 1
-#         end
-#         return
-#     end
-    
-#     output = CUDA.zeros(Int64, bins)
+function indegrees(targets, bins)
+    vals = similar(targets, Int64, (1, length(targets)))
+    vals .= 1
 
-#     threads = 256
-#     blocks = ceil(Int, length(targets) / threads)
-#     @cuda blocks=blocks threads=threads kernel!(output, targets)
+    reshape(scatter(vals, targets, bins, +), bins)
+end
 
-#     return output
-# end
+function symmetricnorm(I::AbstractVector, J::AbstractVector, dims::NTuple{2, Int})
+    d = indegrees(J, dims[2])
 
-function indegrees(targets::CuVector, bins)
-    vals = CUDA.zeros(1, length(targets))
-    scatter(vals, targets, bins, +)[1, :]
+    dᵢ = gather(reshape(d, (1, dims[2])), I)
+    dⱼ = gather(reshape(d, (1, dims[2])), J)
+
+    reshape(sqrt.(1 ./ dᵢ) .* sqrt.(1 ./ dⱼ) .* 2, length(I))
 end
