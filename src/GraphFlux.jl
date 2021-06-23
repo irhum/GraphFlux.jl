@@ -1,5 +1,6 @@
 module GraphFlux
 
+using Base
 using CUDA
 using Flux 
 
@@ -12,11 +13,9 @@ export
 
     GCN
 
-include("cuda/dtypes/hcoo.jl")
-
+include("dtypes/graphtuple.jl")
 
 include("ops/messageprop.jl")
-include("ops/symmetrize.jl")
 
 # GPU ops
 include("cuda/ops/messageprop.jl")
