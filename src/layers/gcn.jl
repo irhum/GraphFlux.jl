@@ -32,7 +32,7 @@ function (layer::GCN)(g::GraphTuple, symnorm::Bool=true)
         gathered = symmetricnorm(g) .* gathered
     end
 
-    σ.(scatter(gathered, g.receivers, size(g.nodes, 2), +))
+    σ.(W * scatter(gathered, g.receivers, size(g.nodes, 2), +))
 end
 
 Flux.@functor GCN 
