@@ -1,12 +1,3 @@
-struct GCN
-    W::AbstractMatrix
-    σ::Function
-end
-
-function GCN(in::Integer, out::Integer, σ=identity)
-    return GCN(rand(out, in), σ)
-end
-
 function indegrees(receivers, bins)
     ones = (similar(receivers) .= 1)
     scatter(ones, receivers, bins, +)
@@ -21,16 +12,21 @@ function symmetricnorm(g)
     sqrt.(1 ./ dᵢ) .* sqrt.(1 ./ dⱼ) .* 2
 end
 
+struct GCN
+    l
+end
+
+function GCN(in::Integer, out::Integer, σ=identity)
+    return GCN(Dense(in, out, σ))
+end
+
 function (layer::GCN)(g::GraphTuple, symnorm::Bool=true)
-    W, σ = layer.W, layer.σ
+    l = layer.l
 
     gathered = gather(nodes(g), senders(g))
+    if symnorm gathered = symmetricnorm(g) .* gathered end
 
-    if symnorm
-        gathered = symmetricnorm(g) .* gathered
-    end
-
-    σ.(W * scatter(gathered, receivers(g), nnodes(g), +))
+    l(scatter(gathered, receivers(g), nnodes(g), +))
 end
 
 Flux.@functor GCN 
