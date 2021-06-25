@@ -3,13 +3,23 @@ function indegrees(receivers, bins)
     scatter(ones, receivers, bins, +)
 end
 
-function symmetricnorm(g)
-    d = max.(indegrees(receivers(g), nnodes(g)), 1)
+function indegrees(g::GraphTuple)
+    indegrees(receivers(g), nnodes(g))
+end
+
+
+function symmetricnorm(g, indegrees)
+    d = max.(indegrees, 1)
 
     dᵢ = gather(d, senders(g))
     dⱼ = gather(d, receivers(g))
 
     sqrt.(1 ./ dᵢ) .* sqrt.(1 ./ dⱼ) .* 2
+end
+
+function symmetricnorm(g)
+    indegrees = indegrees(receivers(g), nnodes(g))
+    symmetricnorm(g, indegrees)
 end
 
 struct GCN
@@ -29,4 +39,31 @@ function (layer::GCN)(g::GraphTuple, symnorm::Bool=true)
     l(scatter(gathered, receivers(g), nnodes(g), +))
 end
 
-Flux.@functor GCN 
+Flux.@functor GCN
+
+struct GCNₑ
+    l
+    edgeembedding
+    rootembedding
+end
+
+function GCNₑ(in::Integer, inₑ::Integer, out::Integer, σ=identity)
+    l = Dense(in, out, σ)
+    edgeembedding = Flux.glorot_uniform(out, inₑ)
+    rootembedding = randn(out)
+    return GCNₑ(l, edgeembedding, rootembedding)
+end
+
+function (layer::GCNₑ)(g::GraphTuple)
+    nodeh = layer.l(nodes(g))
+    edgeh = layer.edgeembedding * edges(g)
+
+    deg = indegrees(g) .+ 1
+
+    gathered = gather(nodeh, senders(g))
+    gathered = reshape(symmetricnorm(g, deg), 1, :) .* relu.(gathered .+ edgeh)
+
+    scatter(gathered, receivers(g), nnodes(g), +) .+ relu.(nodeh .+ layer.rootembedding) ./ reshape(deg, 1, :)
+end
+
+Flux.@functor GCNₑ 

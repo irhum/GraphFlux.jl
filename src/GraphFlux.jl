@@ -11,7 +11,8 @@ import SparseArrays: dimlub
 export 
     CuSparseMatrixHCOO,
 
-    GCN
+    GCN,
+    GCNₑ
 
 include("dtypes/graphtuple.jl")
 
@@ -22,5 +23,4 @@ include("cuda/ops/messageprop.jl")
 
 # layers 
 include("layers/gcn.jl")
-
 end
