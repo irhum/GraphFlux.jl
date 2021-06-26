@@ -64,7 +64,10 @@ function (layer::GCNₑ)(g::AbstractGraphTuple)
     gathered = gather(nodeh, senders(g))
     gathered = reshape(symmetricnorm(g, deg), 1, :) .* relu.(gathered .+ edgeh)
 
-    scatter(gathered, receivers(g), nnodes(g), +) .+ relu.(nodeh .+ layer.rootembedding) ./ reshape(deg, 1, :)
+    nodeh = scatter(gathered, receivers(g), nnodes(g), +) .+ relu.(nodeh .+ layer.rootembedding) ./ reshape(deg, 1, :)
+    # TODO: make this NOT state changing
+    updatenodes!(g, nodeh)
+    return g
 end
 
 Flux.@functor GCNₑ 
