@@ -14,7 +14,8 @@ function symmetricnorm(g, indegrees)
     dᵢ = gather(d, senders(g))
     dⱼ = gather(d, receivers(g))
 
-    sqrt.(1 ./ dᵢ) .* sqrt.(1 ./ dⱼ) .* 2
+    # TODO: actual solution for type stability!
+    Float32.(sqrt.(1 ./ dᵢ) .* sqrt.(1 ./ dⱼ))
 end
 
 function symmetricnorm(g)

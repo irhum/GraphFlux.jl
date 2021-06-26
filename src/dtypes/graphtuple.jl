@@ -77,3 +77,17 @@ function batch(gs::Array{GraphTuple}, nodespergraph, edgespergraph)
                             nodes2graph, edges2graph, numgraphs)
 end
 
+
+# better approach than overriding existing types?
+function Functors.functor(d::Dict{T, <:AbstractArray}) where {T}
+    kvs = [(k, v) for (k, v) in d]
+    ks = [k for (k, _) in kvs]
+    vs = [v for (_, v) in kvs]
+    
+    function reconstruct(all)
+        Dict(k=>v for (k, v) in zip(ks, all.vs))
+    end
+    return (vs=vs,), reconstruct
+end
+
+Flux.@functor BatchGraphTuple

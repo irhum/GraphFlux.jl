@@ -3,6 +3,7 @@ module GraphFlux
 using Base
 using CUDA
 using Flux 
+using Functors
 
 import Base
 import CUDA.CUSPARSE: AbstractCuSparseMatrix
