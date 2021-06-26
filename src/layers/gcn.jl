@@ -3,7 +3,7 @@ function indegrees(receivers, bins)
     scatter(ones, receivers, bins, +)
 end
 
-function indegrees(g::GraphTuple)
+function indegrees(g)
     indegrees(receivers(g), nnodes(g))
 end
 
@@ -30,7 +30,7 @@ function GCN(in::Integer, out::Integer, σ=identity)
     return GCN(Dense(in, out, σ))
 end
 
-function (layer::GCN)(g::GraphTuple, symnorm::Bool=true)
+function (layer::GCN)(g::AbstractGraphTuple, symnorm::Bool=true)
     l = layer.l
 
     gathered = gather(nodes(g), senders(g))
@@ -54,7 +54,7 @@ function GCNₑ(in::Integer, inₑ::Integer, out::Integer, σ=identity)
     return GCNₑ(l, edgeembedding, rootembedding)
 end
 
-function (layer::GCNₑ)(g::GraphTuple)
+function (layer::GCNₑ)(g::AbstractGraphTuple)
     nodeh = layer.l(nodes(g))
     edgeh = layer.edgeembedding * edges(g)
 
