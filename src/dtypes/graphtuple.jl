@@ -1,33 +1,23 @@
 abstract type AbstractGraphTuple end
 mutable struct GraphTuple <: AbstractGraphTuple
-    nodesdict::Dict
-    edgesdict::Dict
-    globalsdict::Dict
+    nodes
+    edges
+    globals
     senders::AbstractVector{<:Integer}
     receivers::AbstractVector{<:Integer}
 end
 
-arrdict = Dict{Any, AbstractArray}
-function graphdefaults(nodes, edges, globals)
-    if typeof(nodes) <: AbstractArray nodes=arrdict("default" => nodes) end
-    if typeof(edges) <: AbstractArray edges=arrdict("default" => edges) end
-    if typeof(globals) <: AbstractArray globals=arrdict("default" => globals) end
-
-    return nodes, edges, globals
-end
-
-function GraphTuple(;nodes=arrdict(), edges=arrdict(), globals=arrdict(),
+function GraphTuple(;nodes=nothing, edges=nothing, globals=nothing,
                     senders, receivers)
     
     @assert length(senders) == length(receivers)
-    nodes, edges, globals = graphdefaults(nodes, edges, globals)
 
     return GraphTuple(nodes, edges, globals, senders, receivers)
 end
 
-nodes(g::AbstractGraphTuple, key="default") = g.nodesdict[key]
-edges(g::AbstractGraphTuple, key="default") = g.edgesdict[key]
-globals(g::AbstractGraphTuple, key="default") = g.globalsdict[key]
+nodes(g::AbstractGraphTuple) = g.nodes
+edges(g::AbstractGraphTuple) = g.edges
+globals(g::AbstractGraphTuple) = g.globals
 
 senders(g::AbstractGraphTuple) = g.senders
 receivers(g::AbstractGraphTuple) = g.receivers
@@ -36,34 +26,14 @@ receivers(g::AbstractGraphTuple) = g.receivers
 nnodes(g::AbstractGraphTuple) = size(nodes(g), 2)
 nedges(g::AbstractGraphTuple) = g |> senders |> length
 
-Flux.@nograd function updatenodes(g::AbstractGraphTuple, v, key="default")
-    g = copy(g)
-    d = copy(g.nodesdict)
-    d[key] = v
-    g.nodesdict = d
-    return g
-end
-
-Flux.@nograd function updateedges(g::AbstractGraphTuple, v, key="default")
-    g = copy(g)
-    d = copy(g.edgesdict)
-    d[key] = v
-    g.edgesdict = d
-    return g
-end
-
-Flux.@nograd function updateglobals(g::AbstractGraphTuple, v, key="default")
-    g = copy(g)
-    d = copy(g.globalsdict)
-    d[key] = v
-    g.globalsdict = d
-    return g
-end
+updatenodes(g::AbstractGraphTuple, v) = @set g.nodes = v
+updateedges(g::AbstractGraphTuple, v) = @set g.edges = v
+updateglobals(g::AbstractGraphTuple, v) = @set g.globals = v
 
 mutable struct BatchGraphTuple <: AbstractGraphTuple
-    nodesdict::Dict
-    edgesdict::Dict
-    globalsdict::Dict
+    nodes
+    edges
+    globals
     senders::AbstractVector{<:Integer}
     receivers::AbstractVector{<:Integer}
 
@@ -73,9 +43,9 @@ mutable struct BatchGraphTuple <: AbstractGraphTuple
 end
 
 function batch(gs::Array{GraphTuple}, nodespergraph, edgespergraph)
-    nodesdict = Dict(k=>hcat([nodes(g, k) for g in gs]...) for (k,_) in gs[1].nodesdict)
-    edgesdict = Dict(k=>hcat([edges(g, k) for g in gs]...) for (k,_) in gs[1].edgesdict)
-    globaldict = Dict(k=>hcat([globals(g, k) for g in gs]...) for (k,_) in gs[1].globalsdict)
+    nodesv = hcat([nodes(g) for g in gs]...)
+    edgesv = hcat([edges(g) for g in gs]...)
+    globalsv = hcat([globals(g) for g in gs]...)
 
     numgraphs = length(gs)
     nodes2graph = vcat(fill.(1:numgraphs, nodespergraph)...)
@@ -85,11 +55,10 @@ function batch(gs::Array{GraphTuple}, nodespergraph, edgespergraph)
     shift[1] = 0
     edgeshift = vcat(fill.(shift, edgespergraph)...)
 
-    # @show edgeshift[1:100]
     sendersv = vcat([senders(g) for g in gs]...) .+ edgeshift
     receiversv = vcat([receivers(g) for g in gs]...) .+ edgeshift
 
-    return BatchGraphTuple(nodesdict, edgesdict, globaldict,
+    return BatchGraphTuple(nodesv, edgesv, globalsv,
                             sendersv, receiversv,
                             nodes2graph, edges2graph, numgraphs)
 end
@@ -107,7 +76,5 @@ end
 #     return (vs=vs,), reconstruct
 # end
 
-Base.copy(g::BatchGraphTuple) = BatchGraphTuple(g.nodesdict, g.edgesdict, g.globalsdict,
-                                                g.senders, g.receivers,
-                                                g.node2graph, g.edge2graph, g.numgraphs)
-# Flux.@functor BatchGraphTuple
+
+Flux.@functor BatchGraphTuple

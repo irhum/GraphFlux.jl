@@ -26,6 +26,7 @@ end
 
 
 # derivatives!
+# TODO: correct gradients for NON addition aggregation
 function ChainRulesCore.rrule(::typeof(gather), data::AbstractMatrix, sources::AbstractVector)
     pullback(Ω̄) = (NoTangent(), scatter(Ω̄, sources, size(data, 2), +), ZeroTangent())
     return gather(data, sources), pullback
