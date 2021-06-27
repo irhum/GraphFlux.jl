@@ -3,6 +3,8 @@ using Flux
 
 using Revise
 using GraphFlux
+using Random
+
 
 # atomnum, chirality, degree, charge, numH, radicale, hybridization, isarom, isisring
 const NUM_ATOM_FEATURES = [119, 4, 12, 12, 10, 6, 6, 2, 2]
@@ -24,52 +26,47 @@ function nhotfeats(a::AbstractArray, numfeats::AbstractVector, normalize=false)
     normalize ? out ./ length(numfeats) : out
 end
 
-BSON.@load "hiv.bson" edgelist edgefeats nodefeats nodeidx edgeidx
+function batch(features, graphdata, idxs)
+    cumnumnodes = cumsum(graphdata["numnodes"])
+    cumnumedges = cumsum(graphdata["numedges"])
 
-edges = edgelist[1:edgeidx[1], :] .+ 1
-sources = edges[:, 1]
-receivers = edges[:, 2]
+    graphs = Vector{GraphTuple}(undef, length(idxs))
 
-edgeh = nhotfeats(edgefeats[:, 1:edgeidx[1]], NUM_BOND_FEATURES)
-nodeh = nhotfeats(nodefeats[:, 1:nodeidx[1]], NUM_ATOM_FEATURES) 
+    for (i, idx) in enumerate(idxs)
+        nodef = features["node"][:, (idx == 1 ? 1 : cumnumnodes[idx - 1]+1):cumnumnodes[idx]]
+        nodef = nhotfeats(nodef, NUM_ATOM_FEATURES)
 
-gcn = GCNₑ(173, 13, 300)
+        edgeidxs = (idx == 1 ? 1 : cumnumedges[idx - 1]+1):cumnumedges[idx]
+        edgef = nhotfeats(features["edge"][:, edgeidxs], NUM_BOND_FEATURES)
 
-tup1 = GraphFlux.GraphTuple(nodes=nodeh, edges=edgeh, senders=sources, receivers=receivers)
-@time tup = GraphFlux.batch(repeat([tup1], 4000), repeat([19], 4000), repeat([20], 4000))
+        senders = graphdata["edgelist"][edgeidxs, 1]
+        receivers = graphdata["edgelist"][edgeidxs, 2]
+
+        graphs[i] = GraphTuple(nodes=nodef, edges=edgef, senders=senders, receivers=receivers)
+    end
+    batchgraphs(graphs, graphdata["numnodes"][idxs], graphdata["numedges"][idxs])
+end
+
+graph = batch(features, graphdata, idxs["test"])
 
 gcn = GCNₑ(173, 13, 300) |> gpu
 gcn2 = GCNₑ(300, 13, 300) |> gpu
 
-using Zygote
+graphG = graph |> gpu
 
-tupG = tup |> gpu
+ps = Flux.params(gcn, gcn2)
 
-ps = Params(Flux.params(gcn, gcn2))
-
-b = Zygote.gradient(ps) do 
-        a = tupG |> gcn |> gcn2 |> gcn2
-        sum(GraphFlux.nodes(a))
-    end
-
-b[ps[1]]
 using BenchmarkTools
-@benchmark (CUDA.@sync begin
-    b2 = Zygote.gradient(ps) do 
-        a = tupG |> gcn |> gcn2 |> gcn2
-        # a = tup |> gcn
+using CUDA 
+
+b = Flux.gradient(ps) do 
+        a = graphG |> gcn |> gcn2 |> gcn2
         sum(GraphFlux.nodes(a))
     end
-end) seconds=0.5
 
 @benchmark (CUDA.@sync begin
-        a = tupG |> gcn |> gcn2 |> gcn2
+    b = Flux.gradient(ps) do 
+        a = graphG |> gcn |> gcn2 |> gcn2 |> gcn2 |> gcn2
         sum(GraphFlux.nodes(a))
-end) seconds=0.5
-
-c = Array(1:24)
-
-
-using Random
-randperm(200)
-
+    end
+end) seconds=1.25

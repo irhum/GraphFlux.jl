@@ -42,7 +42,7 @@ mutable struct BatchGraphTuple <: AbstractGraphTuple
     numgraphs::Integer
 end
 
-function batch(gs::Array{GraphTuple}, nodespergraph, edgespergraph)
+function batchgraphs(gs::Vector{GraphTuple}, nodespergraph, edgespergraph)
     nodesv = hcat([nodes(g) for g in gs]...)
     edgesv = hcat([edges(g) for g in gs]...)
     globalsv = hcat([globals(g) for g in gs]...)

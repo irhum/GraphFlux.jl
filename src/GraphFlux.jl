@@ -14,6 +14,10 @@ import SparseArrays: dimlub
 export 
     CuSparseMatrixHCOO,
 
+    GraphTuple, 
+    BatchGraphTuple,
+    batchgraphs,
+
     GCN,
     GCNₑ
 
