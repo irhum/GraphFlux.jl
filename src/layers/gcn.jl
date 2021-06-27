@@ -7,8 +7,7 @@ function indegrees(g)
     indegrees(receivers(g), nnodes(g))
 end
 
-
-function symmetricnorm(g, indegrees)
+Flux.@nograd function symmetricnorm(g, indegrees)
     d = max.(indegrees, 1)
 
     dᵢ = gather(d, senders(g))
@@ -22,6 +21,9 @@ function symmetricnorm(g)
     indegrees = indegrees(receivers(g), nnodes(g))
     symmetricnorm(g, indegrees)
 end
+
+Flux.@nograd indegrees
+Flux.@nograd symmetricnorm
 
 struct GCN
     l
@@ -55,10 +57,12 @@ function GCNₑ(in::Integer, inₑ::Integer, out::Integer, σ=identity)
     return GCNₑ(l, edgeembedding, rootembedding)
 end
 
+using Zygote 
+
 function (layer::GCNₑ)(g::AbstractGraphTuple)
     nodeh = layer.l(nodes(g))
     edgeh = layer.edgeembedding * edges(g)
-
+    
     deg = indegrees(g) .+ 1
 
     gathered = gather(nodeh, senders(g))
@@ -66,8 +70,7 @@ function (layer::GCNₑ)(g::AbstractGraphTuple)
 
     nodeh = scatter(gathered, receivers(g), nnodes(g), +) .+ relu.(nodeh .+ layer.rootembedding) ./ reshape(deg, 1, :)
     # TODO: make this NOT state changing
-    updatenodes!(g, nodeh)
-    return g
+    updatenodes(g, nodeh)
 end
 
 Flux.@functor GCNₑ 

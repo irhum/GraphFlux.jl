@@ -4,6 +4,7 @@ using Base
 using CUDA
 using Flux 
 using Functors
+using ChainRulesCore
 
 import Base
 import CUDA.CUSPARSE: AbstractCuSparseMatrix

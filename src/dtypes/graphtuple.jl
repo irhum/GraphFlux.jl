@@ -36,9 +36,29 @@ receivers(g::AbstractGraphTuple) = g.receivers
 nnodes(g::AbstractGraphTuple) = size(nodes(g), 2)
 nedges(g::AbstractGraphTuple) = g |> senders |> length
 
-updatenodes!(g::AbstractGraphTuple, v, key="default") = g.nodesdict[key] = v
-updateedges!(g::AbstractGraphTuple, v, key="default") = g.edgesdict[key] = v
-updateglobals!(g::AbstractGraphTuple, v, key="default") = g.globalsdict[key] = v
+Flux.@nograd function updatenodes(g::AbstractGraphTuple, v, key="default")
+    g = copy(g)
+    d = copy(g.nodesdict)
+    d[key] = v
+    g.nodesdict = d
+    return g
+end
+
+Flux.@nograd function updateedges(g::AbstractGraphTuple, v, key="default")
+    g = copy(g)
+    d = copy(g.edgesdict)
+    d[key] = v
+    g.edgesdict = d
+    return g
+end
+
+Flux.@nograd function updateglobals(g::AbstractGraphTuple, v, key="default")
+    g = copy(g)
+    d = copy(g.globalsdict)
+    d[key] = v
+    g.globalsdict = d
+    return g
+end
 
 mutable struct BatchGraphTuple <: AbstractGraphTuple
     nodesdict::Dict
@@ -50,9 +70,6 @@ mutable struct BatchGraphTuple <: AbstractGraphTuple
     node2graph::AbstractVector{<:Integer}
     edge2graph::AbstractVector{<:Integer}
     numgraphs::Integer
-end
-
-function batchnodes(gs::Vector{GraphTuple})
 end
 
 function batch(gs::Array{GraphTuple}, nodespergraph, edgespergraph)
@@ -79,15 +96,18 @@ end
 
 
 # better approach than overriding existing types?
-function Functors.functor(d::Dict{T, <:AbstractArray}) where {T}
-    kvs = [(k, v) for (k, v) in d]
-    ks = [k for (k, _) in kvs]
-    vs = [v for (_, v) in kvs]
+# function Functors.functor(d::Dict{T, <:AbstractArray}) where {T}
+#     kvs = [(k, v) for (k, v) in d]
+#     ks = [k for (k, _) in kvs]
+#     vs = [v for (_, v) in kvs]
     
-    function reconstruct(all)
-        Dict(k=>v for (k, v) in zip(ks, all.vs))
-    end
-    return (vs=vs,), reconstruct
-end
+#     function reconstruct(all)
+#         Dict(k=>v for (k, v) in zip(ks, all.vs))
+#     end
+#     return (vs=vs,), reconstruct
+# end
 
-Flux.@functor BatchGraphTuple
+Base.copy(g::BatchGraphTuple) = BatchGraphTuple(g.nodesdict, g.edgesdict, g.globalsdict,
+                                                g.senders, g.receivers,
+                                                g.node2graph, g.edge2graph, g.numgraphs)
+# Flux.@functor BatchGraphTuple

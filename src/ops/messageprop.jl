@@ -3,7 +3,8 @@ function gather(data::AbstractMatrix, sources::AbstractVector)
 end
 
 function gather(data::AbstractVector, sources::AbstractVector)
-    return data[sources]
+    data = reshape(data, (1, length(data)))
+    gather(data, sources)
 end
 
 
@@ -21,4 +22,16 @@ end
 function scatter(data::AbstractVector, targets::AbstractVector, bins, ⊕)
     data = reshape(data, (1, length(data)))
     scatter(data, targets, bins, ⊕)
+end
+
+
+# derivatives!
+function ChainRulesCore.rrule(::typeof(gather), data::AbstractMatrix, sources::AbstractVector)
+    pullback(Ω̄) = (NoTangent(), scatter(Ω̄, sources, size(data, 2), +), ZeroTangent())
+    return gather(data, sources), pullback
+end
+
+function ChainRulesCore.rrule(::typeof(scatter), data::AbstractMatrix, targets::AbstractVector, bins, ⊕)
+    pullback(Ω̄) = (NoTangent(), gather(Ω̄, targets), ZeroTangent(), ZeroTangent(), ZeroTangent())
+    return scatter(data, targets, bins, ⊕), pullback
 end
