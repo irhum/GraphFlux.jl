@@ -1,3 +1,5 @@
+# inspired by pytorch geometric's message passing implementation
+# https://arxiv.org/abs/1903.02428
 function gather(data::AbstractMatrix, sources::AbstractVector)
     return data[:, sources]
 end
