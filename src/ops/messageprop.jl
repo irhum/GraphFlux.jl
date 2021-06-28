@@ -21,7 +21,7 @@ end
 
 function scatter(data::AbstractVector, targets::AbstractVector, bins, ⊕)
     data = reshape(data, (1, length(data)))
-    scatter(data, targets, bins, ⊕)
+    scatter(data, targets, bins, ⊕)[1, :]
 end
 
 

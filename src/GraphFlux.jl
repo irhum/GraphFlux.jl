@@ -19,7 +19,10 @@ export
     batchgraphs,
 
     GCN,
-    GCNₑ
+    GCNₑ,
+    graphmeanpool,
+
+    OGBAtomEncoder
 
 include("dtypes/graphtuple.jl")
 
@@ -30,4 +33,8 @@ include("cuda/ops/messageprop.jl")
 
 # layers 
 include("layers/gcn.jl")
+
+# features
+include("features/molecules/ogbhiv.jl")
+
 end

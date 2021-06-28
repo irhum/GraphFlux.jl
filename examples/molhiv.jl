@@ -1,72 +1,75 @@
 using BSON 
 using Flux 
+using ProgressMeter
+using Setfield
+using ROC
+using Random
 
 using Revise
 using GraphFlux
-using Random
 
+BSON.@load "hiv.bson" features graphdata idxs
 
-# atomnum, chirality, degree, charge, numH, radicale, hybridization, isarom, isisring
-const NUM_ATOM_FEATURES = [119, 4, 12, 12, 10, 6, 6, 2, 2]
-
-# bondtype, bondstereo, isconjugated
-const NUM_BOND_FEATURES = [5, 6, 2]
-
-function nhotfeats(a::AbstractArray, numfeats::AbstractVector, normalize=false)
-    batchsize = size(a, 2)
-    sumnumfeats = circshift(cumsum(numfeats), 1)
-    sumnumfeats[1] = 0
-
-    out = similar(a, Float32, (sum(numfeats), batchsize)) .= 0
-
-    for i in 1:size(a, 2)
-        out[a[:, i] .+ sumnumfeats, i] .= 1
-    end
-
-    normalize ? out ./ length(numfeats) : out
+struct OGBGCNBlock
+    gcn 
+    batchnorm
+    dropout
+    last
 end
 
-function batch(features, graphdata, idxs)
-    cumnumnodes = cumsum(graphdata["numnodes"])
-    cumnumedges = cumsum(graphdata["numedges"])
-
-    graphs = Vector{GraphTuple}(undef, length(idxs))
-
-    for (i, idx) in enumerate(idxs)
-        nodef = features["node"][:, (idx == 1 ? 1 : cumnumnodes[idx - 1]+1):cumnumnodes[idx]]
-        nodef = nhotfeats(nodef, NUM_ATOM_FEATURES)
-
-        edgeidxs = (idx == 1 ? 1 : cumnumedges[idx - 1]+1):cumnumedges[idx]
-        edgef = nhotfeats(features["edge"][:, edgeidxs], NUM_BOND_FEATURES)
-
-        senders = graphdata["edgelist"][edgeidxs, 1]
-        receivers = graphdata["edgelist"][edgeidxs, 2]
-
-        graphs[i] = GraphTuple(nodes=nodef, edges=edgef, senders=senders, receivers=receivers)
-    end
-    batchgraphs(graphs, graphdata["numnodes"][idxs], graphdata["numedges"][idxs])
+function OGBGCNBlock(embdim::Integer; droprate::AbstractFloat=0.5, last::Bool=false)
+    OGBGCNBlock(GCNₑ(embdim, embdim),
+                BatchNorm(embdim),
+                Dropout(droprate), 
+                last)
 end
 
-graph = batch(features, graphdata, idxs["test"])
+function (block::OGBGCNBlock)(g)
+    g = block.gcn(g)
+    nodeh = block.batchnorm(GraphFlux.nodes(g))
+    if block.last nodeh = relu.(nodeh) end
+    nodeh = block.dropout(nodeh)
+    @set g.nodes = nodeh
+end
 
-gcn = GCNₑ(173, 13, 300) |> gpu
-gcn2 = GCNₑ(300, 13, 300) |> gpu
+Flux.@functor OGBGCNBlock
 
-graphG = graph |> gpu
+model = Chain(OGBAtomEncoder(300),
+            OGBGCNBlock(300),
+            OGBGCNBlock(300),
+            OGBGCNBlock(300),
+            OGBGCNBlock(300),
+            OGBGCNBlock(300; last=true), 
+            graphmeanpool,
+            Dense(300, 1), 
+            x -> x[1, :]) |> gpu 
 
-ps = Flux.params(gcn, gcn2)
+ps = Flux.params(model)
 
-using BenchmarkTools
-using CUDA 
+loss(x, y) = Flux.Losses.logitbinarycrossentropy(model(x), y)
+opt = Flux.Optimise.ADAM()
 
-b = Flux.gradient(ps) do 
-        a = graphG |> gcn |> gcn2 |> gcn2
-        sum(GraphFlux.nodes(a))
+EPOCHS = 50
+batchsize = 1024
+# Training v0.0.1, let's go!
+Flux.@epochs EPOCHS begin
+    @showprogress for batchidxs in Iterators.partition(Random.shuffle(idxs["train"]), batchsize)
+        X = GraphFlux.getmolbatch(features, graphdata, batchidxs) |> gpu
+        y = features["targets"][batchidxs] |> gpu
+        
+        data = [(X, y)]
+        Flux.train!(loss, ps, data, opt)
     end
+    
+    valpreds = vcat([model(GraphFlux.getmolbatch(features, graphdata, idsub) |> gpu) for idsub in Iterators.partition(idxs["valid"], 2048)]...)
+    println(AUC(roc(sigmoid.(valpreds) |> cpu, features["targets"][idxs["valid"]])))
+end
 
-@benchmark (CUDA.@sync begin
-    b = Flux.gradient(ps) do 
-        a = graphG |> gcn |> gcn2 |> gcn2 |> gcn2 |> gcn2
-        sum(GraphFlux.nodes(a))
-    end
-end) seconds=1.25
+
+testpreds = vcat([model(GraphFlux.getmolbatch(features, graphdata, idsub) |> gpu) for idsub in Iterators.partition(idxs["test"], 2048)]...)
+println(AUC(roc(sigmoid.(testpreds) |> cpu, features["targets"][idxs["test"]])))
+
+# model = model |> cpu
+# BSON.@save "molhiv.bson" model
+
+# [length(x) for x in ps] |> sum

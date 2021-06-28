@@ -22,8 +22,15 @@ function symmetricnorm(g)
     symmetricnorm(g, indegreesv)
 end
 
+function nodespergraph(g::BatchGraphTuple)
+    ones = similar(g.nodes, Int32, size(g.nodes, 2))
+    ones .= 1
+    scatter(ones, g.node2graph, g.numgraphs, +)
+end
+
 Flux.@nograd indegrees
 Flux.@nograd symmetricnorm
+Flux.@nograd nodespergraph
 
 struct GCN
     l
@@ -45,32 +52,8 @@ end
 
 Flux.@functor GCN
 
-struct GCNₑ
-    l
-    edgeembedding
-    rootembedding
+
+function graphmeanpool(g::BatchGraphTuple)
+    nodesperg = nodespergraph(g)
+    scatter(g.nodes, g.node2graph, g.numgraphs, +) ./ Flux.unsqueeze(nodesperg, 1)
 end
-
-function GCNₑ(in::Integer, inₑ::Integer, out::Integer, σ=identity)
-    l = Dense(in, out, σ)
-    edgeembedding = Flux.glorot_uniform(out, inₑ)
-    rootembedding = randn(out)
-    return GCNₑ(l, edgeembedding, rootembedding)
-end
-
-
-function (layer::GCNₑ)(g::AbstractGraphTuple)
-    nodeh = layer.l(nodes(g))
-    edgeh = layer.edgeembedding * edges(g)
-    
-    deg = indegrees(g) .+ 1
-
-    gathered = gather(nodeh, senders(g))
-    gathered = reshape(symmetricnorm(g, deg), 1, :) .* relu.(gathered .+ edgeh)
-
-    nodeh = scatter(gathered, receivers(g), nnodes(g), +) .+ relu.(nodeh .+ layer.rootembedding) ./ reshape(deg, 1, :)
-
-    updatenodes(g, nodeh)
-end
-
-Flux.@functor GCNₑ 

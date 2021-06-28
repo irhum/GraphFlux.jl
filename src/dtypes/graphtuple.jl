@@ -42,7 +42,7 @@ mutable struct BatchGraphTuple <: AbstractGraphTuple
     numgraphs::Integer
 end
 
-function batchgraphs(gs::Vector{GraphTuple}, nodespergraph, edgespergraph)
+function batchgraphs(gs::Vector{GraphTuple}, nodespergraph, edgespergraph, symmetrize=false)
     nodesv = hcat([nodes(g) for g in gs]...)
     edgesv = hcat([edges(g) for g in gs]...)
     globalsv = hcat([globals(g) for g in gs]...)
@@ -57,6 +57,15 @@ function batchgraphs(gs::Vector{GraphTuple}, nodespergraph, edgespergraph)
 
     sendersv = vcat([senders(g) for g in gs]...) .+ edgeshift
     receiversv = vcat([receivers(g) for g in gs]...) .+ edgeshift
+
+    if symmetrize
+        sendersvsym = vcat([sendersv, receiversv]...)
+        receiversvsym = vcat([receiversv, sendersv]...)
+        sendersv, receiversv = sendersvsym, receiversvsym
+
+        edges2graph = repeat(edges2graph, 2)
+        edgesv = repeat(edgesv, 1, 2)
+    end
 
     return BatchGraphTuple(nodesv, edgesv, globalsv,
                             sendersv, receiversv,
