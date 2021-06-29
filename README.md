@@ -9,8 +9,8 @@ I won't promise this to be the most stable GNN library right now (check out [PyT
 ### So *what is this?*
 GraphFlux.jl is 
 * First and foremost a research library
-* That humbly acknowledges the best practices of other libraries and will expand on them
-* To explore applications of GNNs across a broad range of scientific fields. 
+* That hopes to build on the best practices of other GNN libraries
+* To explore applications of GNNs across a broad range of scientific fields 
 
 It has no stable API as of right now (read: everything can, and probably will change), because my goal right now is [not to get too attached](https://en.wikipedia.org/wiki/Sunk_cost) to a "clean and beautiful" technical implementation. Perhaps some of its ideas will get merged into an existing library. Perhaps it's destined to grow into its own library.
 
