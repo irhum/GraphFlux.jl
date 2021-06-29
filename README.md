@@ -11,8 +11,9 @@ GraphFlux.jl is
 * First and foremost a research library
 * That hopes to build on the best practices of other GNN libraries
 * To explore applications of GNNs across a broad range of scientific fields 
+* Across a broad range of supported hardware (already supports CUDA GPUs, and TPU support is on the horizon once `libtpu` becomes available in Julia)
 
-It has no stable API as of right now (read: everything can, and probably will change), because my goal right now is [not to get too attached](https://en.wikipedia.org/wiki/Sunk_cost) to a "clean and beautiful" technical implementation. Perhaps some of its ideas will get merged into an existing library. Perhaps it's destined to grow into its own library.
+It has no stable API as of right now (read: everything can and probably will change), because my goal right now is [not to get too attached](https://en.wikipedia.org/wiki/Sunk_cost) to a "clean and beautiful" technical implementation. Perhaps some of its ideas will get merged into an existing library. Perhaps it's destined to grow into its own library.
 
 Right now, GraphFlux.jl has exactly one singular, focused purpose: being an extremely adaptable tool to demonstrate that GNNs can provide powerful insight for real-world *problems*. Everything else is a delightful coincidence!
 
