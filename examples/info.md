@@ -1,5 +1,6 @@
 ### Replications so far:
 1. `ogbmolhiv.jl` trains a GCN on the `ogbg-molhiv` dataset with an architecture same as the reference implementation by Hu. et. al (2020) as introduced [here](https://arxiv.org/abs/2005.00687), with the Python implementation [here](https://github.com/snap-stanford/ogb/tree/master/examples/graphproppred/mol). 
-    * For ease of use, it's formatted as a Pluto notebook.
+    * For ease of use, it's formatted as a Pluto notebook. 
+    * The predictions are saved as NPZs, and then loaded into a Jupyter notebook in Python to use OGB's evaluators to perform final evaluation. ROC-AUC can be computed in Julia directly, but wanted to make sure the exact same implementation to calculate ROC-AUC on the leaderboards is used here.
     * The original achieves 0.7606 ± 0.0097 Test ROC-AUC, whereas this achieved 0.7549 ± 0.0163 across 5 training runs (the best achieved 0.7815 ROC-AUC, while the worst achieved 0.7375 ROC-AUC, so there's a fair bit of variance involved). I *really* didn't want to play with random seeds over the test set, so I left the results as is.
     * In the interest of full disclosure, I'm making all five models, and their predictions available [here](https://drive.google.com/drive/folders/12GklM8AIMfL45PSP_Qsn82h6-IYX-ICx?usp=sharing). The models are in BSON loadable in Julia, and the predictions are in NPZ loadable in Julia and Python
