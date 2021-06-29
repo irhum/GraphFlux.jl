@@ -27,11 +27,11 @@ function getmolbatch(features, graphdata, idxs)
     graphs = Vector{GraphTuple}(undef, length(idxs))
 
     for (i, idx) in enumerate(idxs)
-        nodef = features["node"][:, (idx == 1 ? 1 : cumnumnodes[idx - 1]+1):cumnumnodes[idx]]
+        nodef = features["nodes"][:, (idx == 1 ? 1 : cumnumnodes[idx - 1]+1):cumnumnodes[idx]]
         nodef = nhotfeats(nodef, OGB_NUM_ATOM_FEATURES)
 
         edgeidxs = (idx == 1 ? 1 : cumnumedges[idx - 1]+1):cumnumedges[idx]
-        edgef = nhotfeats(features["edge"][:, edgeidxs], OGB_NUM_BOND_FEATURES)
+        edgef = nhotfeats(features["edges"][:, edgeidxs], OGB_NUM_BOND_FEATURES)
 
         senders = graphdata["edgelist"][edgeidxs, 1]
         receivers = graphdata["edgelist"][edgeidxs, 2]

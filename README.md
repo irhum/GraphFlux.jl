@@ -17,7 +17,7 @@ It has no stable API as of right now (read: everything can, and probably will ch
 Right now, GraphFlux.jl has exactly one singular, focused purpose: being an extremely adaptable tool to demonstrate that GNNs can provide powerful insight for real-world *problems*. Everything else is a delightful coincidence!
 
 ### A problem-first approach
-To maximize learning, I'm currently focused on replicating key experiments from academic literature on GNNs. This also means that new features are built *as new problems require them*. For instance, there's no fused, memory-efficient message-aggregate operation yet (even though the Julia CUDA kernel would be fairly straightforward to write) because I've not run into a problem that requires it (yet). Once I do, it'll be written.
+To maximize learning, I'm currently focused on replicating key experiments from academic literature on GNNs (check `examples` for more on that). This also means that new features are built *as new problems require them*. For instance, there's no fused, memory-efficient message-aggregate operation yet (even though the Julia CUDA kernel would be fairly straightforward to write) because I've not run into a problem that requires it (yet). Once I do, it'll be written.
 
 This "running head first into a problem" may be a tad strange, but it also ensures that this library, as it matures[^1] will become one whose API is best suited to solve a wide range of research problems (instead of trying to force problems through an overengineered API). 
 

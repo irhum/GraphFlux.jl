@@ -25,4 +25,7 @@ include("cuda/ops/messageprop.jl")
 # layers 
 include("layers/gcn.jl")
 
+# ogbhiv
+include("features/molecules/ogbhiv.jl")
+
 end
