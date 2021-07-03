@@ -34,19 +34,18 @@ Flux.@nograd nodespergraph
 
 struct GCN
     l
+    σ
 end
 
 function GCN(in::Integer, out::Integer, σ=identity)
-    return GCN(Dense(in, out, σ))
+    return GCN(Dense(in, out, bias=false), σ)
 end
 
-function (layer::GCN)(g::AbstractGraphTuple, symnorm::Bool=true)
-    l = layer.l
-
+function (l::GCN)(g::AbstractGraphTuple, symnorm::Bool=true)
     gathered = gather(nodes(g), senders(g))
     if symnorm gathered = symmetricnorm(g) .* gathered end
 
-    newnodes = l(scatter(gathered, receivers(g), nnodes(g), +))
+    newnodes = l.σ.(l.l(scatter(gathered, receivers(g), nnodes(g), +)))
     updatenodes(g, newnodes)
 end
 

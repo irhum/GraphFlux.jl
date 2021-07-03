@@ -109,3 +109,15 @@ function (layer::GCNₑ)(g::AbstractGraphTuple)
 end
 
 Flux.@functor GCNₑ 
+
+struct CoraBlock
+    gcn
+    drop
+end
+
+function (l::CoraBlock)(g::GraphTuple)
+    g = (@set g.nodes = l.drop(g.nodes))
+    l.gcn(g)
+end
+
+Flux.@functor CoraBlock 

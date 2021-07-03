@@ -93,5 +93,5 @@ end
 #     return (vs=vs,), reconstruct
 # end
 
-
+Flux.@functor GraphTuple
 Flux.@functor BatchGraphTuple
