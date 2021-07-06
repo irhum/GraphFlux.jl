@@ -41,12 +41,14 @@ function GCN(in::Integer, out::Integer, σ=identity)
     return GCN(Dense(in, out, bias=false), σ)
 end
 
-function (l::GCN)(g::AbstractGraphTuple, symnorm::Bool=true)
-    gathered = gather(nodes(g), senders(g))
+function (l::GCN)(nodes, senders, receivers; symnorm::Bool=true)
+    gathered = gather(nodes, senders)
     if symnorm gathered = symmetricnorm(g) .* gathered end
+    l.σ.(l.l(scatter(gathered, receivers, size(nodes, 2), +)))
+end
 
-    newnodes = l.σ.(l.l(scatter(gathered, receivers(g), nnodes(g), +)))
-    updatenodes(g, newnodes)
+function (l::GCN)(g::AbstractGraphTuple; symnorm::Bool=true)
+    updatenodes(g, l(g.nodes, g.senders, g.receivers, symnorm=symnorm))
 end
 
 Flux.@functor GCN
