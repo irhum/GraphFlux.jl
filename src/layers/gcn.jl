@@ -41,14 +41,10 @@ function GCN(in::Integer, out::Integer, σ=identity)
     return GCN(Dense(in, out, bias=false), σ)
 end
 
-function (l::GCN)(nodes, senders, receivers; symnorm::Bool=true)
-    gathered = gather(nodes, senders)
-    if symnorm gathered = symmetricnorm(g) .* gathered end
-    l.σ.(l.l(scatter(gathered, receivers, size(nodes, 2), +)))
-end
-
 function (l::GCN)(g::AbstractGraphTuple; symnorm::Bool=true)
-    updatenodes(g, l(g.nodes, g.senders, g.receivers, symnorm=symnorm))
+    gathered = gather(g.nodes, g.senders)
+    if symnorm gathered = symmetricnorm(g) .* gathered end
+    @set g.nodes = l.σ.(l.l(scatter(gathered, g.receivers, size(g.nodes, 2), +)))
 end
 
 Flux.@functor GCN
@@ -58,3 +54,15 @@ function graphmeanpool(g::BatchGraphTuple)
     nodesperg = nodespergraph(g)
     scatter(g.nodes, g.node2graph, g.numgraphs, +) ./ Flux.unsqueeze(nodesperg, 1)
 end
+
+struct NodeLayer
+    layer
+end
+
+function (l::NodeLayer)(g)
+	@set g.nodes = l.layer(g.nodes)
+end
+
+Flux.@functor NodeLayer
+
+

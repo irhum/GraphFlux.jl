@@ -6,6 +6,9 @@ using Functors
 using ChainRulesCore
 using Setfield
 
+using DifferentialEquations
+using DiffEqFlux
+
 export 
     GraphTuple, 
     BatchGraphTuple,
@@ -13,7 +16,10 @@ export
 
     GCN,
     GCNₑ,
-    graphmeanpool
+    NodeLayer,
+    graphmeanpool,
+
+    GraphNeuralODE
 
 include("dtypes/graphtuple.jl")
 
@@ -24,6 +30,7 @@ include("cuda/ops/messageprop.jl")
 
 # layers 
 include("layers/gcn.jl")
+include("layers/graphode.jl")
 
 # ogbhiv
 include("features/molecules/ogbhiv.jl")
