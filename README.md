@@ -23,3 +23,7 @@ To maximize learning, I'm currently focused on replicating key experiments from 
 This "running head first into a problem" may be a tad strange, but it also ensures that this library, as it matures[^1] will become one whose API is best suited to solve a wide range of research problems (instead of trying to force problems through an overengineered API). 
 
 [^1]: (*If* GraphFlux.jl matures. I'm not above killing my projects if I find they're not as promising as initially anticipated. Right now, I definitely hope this survives!)
+
+### Update: why this got killed
+* Training Neural ODEs is, quite simply, very slow, and did not result in a corresponding increase in performance on graph classification tasks to be worth the tradeoff.
+* GeometricFlux.jl is already covering most of the regular use cases, so a duplication effort seems like a not great idea.
